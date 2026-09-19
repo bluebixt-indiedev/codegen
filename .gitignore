@@ -64,6 +64,7 @@ Thumbs.db
 # === Firebase ===
 firebase-config.js
 serviceAccount.json
+.firebase/hosting..cache
 
 # === Codegen ===
 .genchache/
