@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Create Org</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="auth-wrap wide">
+<div class="top-nav"><a href="org.html">← Orgs</a><span id="user-email"></span></div>
+<div class="logo left"><h1>Create organization</h1><p>localStorage: codegen_orgs</p></div>
+<form id="form" class="form active"><label>Name *</label><input id="org-name" required><label>Slug *</label><div class="input-with-prefix"><span>codegen.cc/</span><input id="org-slug" required></div><label>Description</label><textarea id="org-desc" rows="3"></textarea><div class="radio-group"><label class="radio"><input type="radio" name="vis" value="public" checked> Public</label><label class="radio"><input type="radio" name="vis" value="private"> Private</label></div><button class="btn-primary">Create Org</button></form>
+<p id="msg" class="msg"></p>
+</div>
+<script>
+if(!localStorage.getItem('codegen_current_user')) location.href='auth.html';
+document.getElementById('user-email').textContent=JSON.parse(localStorage.getItem('codegen_current_user')).email;
+const nameI=document.getElementById('org-name'), slugI=document.getElementById('org-slug');
+nameI.oninput=()=>{if(!slugI.dataset.touched) slugI.value=nameI.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');};
+slugI.oninput=()=>slugI.dataset.touched=1;
+document.getElementById('form').onsubmit=e=>{
+ e.preventDefault();
+ const orgs=JSON.parse(localStorage.getItem('codegen_orgs')||'[]');
+ const data={name:nameI.value.trim(),slug:slugI.value.trim().toLowerCase(),desc:document.getElementById('org-desc').value,vis:document.querySelector('input[name="vis"]:checked').value,owner:JSON.parse(localStorage.getItem('codegen_current_user')).email,createdAt:Date.now()};
+ if(orgs.find(o=>o.slug===data.slug)) return document.getElementById('msg').textContent='Slug taken';
+ orgs.push(data); localStorage.setItem('codegen_orgs',JSON.stringify(orgs)); localStorage.setItem('codegen_current_org',JSON.stringify(data)); location.href=`org.html?org=${data.slug}`;
+};
+</script>
+</body>
+</html>
+
