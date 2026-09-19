@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Codegen - Auth</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="logo">
+      <img src="img/logo.png" alt="codegencc logo" onerror="this.style.display='none'">
+      <h1>codegen<span>cc</span></h1>
+      <p>Build. Complain. Ship.</p>
+    </div>
+
+    <div class="tabs">
+      <button id="tab-login" class="tab active" onclick="switchTab('login')">Log In</button>
+      <button id="tab-register" class="tab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="form-login" class="form active">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@codegen.cc" required>
+
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" required>
+
+      <button type="submit" class="btn-primary">Log In</button>
+      <p class="hint">No account? <a href="#" onclick="switchTab('register');return false;">Register</a></p>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form id="form-register" class="form">
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="you@codegen.cc" required>
+
+      <label>Password</label>
+      <input type="password" id="reg-password" placeholder="At least 6 characters" required>
+
+      <label>Confirm Password</label>
+      <input type="password" id="reg-confirm" placeholder="Repeat password" required>
+
+      <button type="submit" class="btn-primary">Create Account</button>
+      <p class="hint">Already have account? <a href="#" onclick="switchTab('login');return false;">Log In</a></p>
+    </form>
+
+    <p id="msg" class="msg"></p>
+  </div>
+
+  <script type="module">
+    // Optional Firebase - paste your config if you want real auth
+    // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    // import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    function switchTab(tab){
+      document.getElementById('tab-login').classList.toggle('active', tab==='login');
+      document.getElementById('tab-register').classList.toggle('active', tab==='register');
+      document.getElementById('form-login').classList.toggle('active', tab==='login');
+      document.getElementById('form-register').classList.toggle('active', tab==='register');
+      document.getElementById('msg').textContent='';
+    }
+    window.switchTab = switchTab;
+
+    document.getElementById('form-login').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      document.getElementById('msg').textContent = 'Login: ' + document.getElementById('login-email').value;
+      // Add Firebase login here
+    });
+
+    document.getElementById('form-register').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const p1 = document.getElementById('reg-password').value;
+      const p2 = document.getElementById('reg-confirm').value;
+      if(p1 !== p2){
+        document.getElementById('msg').textContent = 'Passwords do not match';
+        return;
+      }
+      document.getElementById('msg').textContent = 'Registered: ' + document.getElementById('reg-email').value;
+      // Add Firebase register here
+    });
+  </script>
+</body>
+</html>
