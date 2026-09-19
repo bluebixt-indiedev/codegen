@@ -60,3 +60,11 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+
+# === Firebase ===
+firebase-config.js
+serviceAccount.json
+
+# === Codegen ===
+.genchache/
+*cdgensecret.js
