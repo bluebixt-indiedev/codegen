@@ -1,0 +1,43 @@
+# === DATA - Never push real repos ===
+data/*
+!data/.gitkeep
+!data/repos/.gitkeep
+data/repos/*
+
+# === Binaries ===
+codegen
+codegen.exe
+*.exe
+*.dll
+*.so
+*.dylib
+/bin/
+/dist/
+
+# === Go ===
+vendor/
+*.test
+*.out
+go.sum
+
+# === Config & Secrets ===
+.env
+*.env
+custom/conf/app.ini
+app.ini
+*.key
+*.pem
+
+# === Logs & Temp ===
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === IDE ===
+.vscode/
+.idea/
+*.iml
