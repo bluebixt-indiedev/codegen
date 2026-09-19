@@ -1,8 +1,27 @@
-# === DATA - Never push real repos ===
+# === DATA - Never push real data ===
 data/*
 !data/.gitkeep
 !data/repos/.gitkeep
+!data/commit/.gitkeep
+!data/lfs/.gitkeep
+!data/attachments/.gitkeep
+!data/avatars/.gitkeep
+!data/tmp/.gitkeep
+!data/packages/.gitkeep
+!data/actions/.gitkeep
+!data/queues/.gitkeep
+!data/indexers/.gitkeep
+
 data/repos/*
+data/commit/*
+data/lfs/*
+data/attachments/*
+data/avatars/*
+data/tmp/*
+data/packages/*
+data/actions/*
+data/queues/*
+data/indexers/*
 
 # === Binaries ===
 codegen
