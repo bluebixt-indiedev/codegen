@@ -5,7 +5,17 @@
 Build. Complain. Ship.
 
 ## What is Code Complainer?
-Code Complainer (Codegen) is a git platform written on [Golang](https://go.dev). The protocol is under Git Protocol. When Creating a new file, lfs or other it goes to `data/` folder with all the each folder have a file named `.gitkeep`. 
+Code Complainer (Codegen) is a git platform written on [Golang](https://go.dev). The protocol is under Git Protocol. When Creating a new file, lfs or other it goes to `data/` folder with all the each folder have a file named `.gitkeep`. Codegen is Free/Libre git platform perfect for non-credit users.
+
+## Why We Build Codegen?
+Because GitHub is paid from GitHub Marketplace. But GitHub have a GitHub Copilot so it will write code faster and less stress. but **GitHub Copilot** need be trained. GitHub is less stable. Paid? GitHub imagines it. More Money, More money on the credit. But It is not perfect for non-credit users. I finally leave GitHub. **GitHub Copilot**? No need for it. it need more train. to avoid the misunderstandings. GitHub is developed by GitHub Inc. the parent company of GitHub Inc. is Microsoft. People dislike Microsoft-corporated. GitHub is kinda strict because new users creating a many repository and the GitHub tracks it and is **flagged**. 
+
+### GitHub Flagger 
+GitHub use the flag-bot, it is a bot but is a flagger for the users. People don't like this.
+
+### Repositorys moved GitHub To Codeberg
+Like Zig, read the [No GitHub](https://nogithub.codeberg.page/).
+
 
 ## Motto of Codegen
 
@@ -44,6 +54,6 @@ The Codegen Countries Home is in the **Baguio, Philippines**.
 The Mascot is **Ming Ming**, a blue cat loves program with you.
 
 ## No-Github Supported
-We Added **No-Github** because my GitHub account was flagged and it cannot appeal me. for more information visit [No-Github Website](https;//nogithub.codeberg.page).
+We Added **No-Github** because my GitHub account was flagged and it cannot appeal me. for more information visit [No-Github Website](https://nogithub.codeberg.page/).
 
 © Copyright BlueBix 2026, All Rights Reserved.
