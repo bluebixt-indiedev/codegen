@@ -49,6 +49,7 @@ app.ini
 
 # === Logs & Temp ===
 *.log
+logger.js
 *.tmp
 *.swp
 *.swo
