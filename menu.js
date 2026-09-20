@@ -10,7 +10,7 @@
     { id: 'create-org', label: 'Create Org', icon: '➕', href: 'create-org.html', desc: 'New organization' },
     { id: 'create-repo', label: 'Create Repo', icon: '📦', href: 'create-repo.html', desc: 'New repository' },
     { id: 'repo', label: 'Repository', icon: '📁', href: 'repo.html', desc: 'View repo', dynamic: true },
-    { id: 'neighborhoodlife', label: 'Neighborhood', icon: '🌐', href: 'neighborhoodlife.html', desc: 'Explore feed like Forgejo' },
+    { id: 'dash', label: 'Dashboard', icon: '🌐', href: 'dash.html', desc: 'Explore Dashboard like Any Git Platform' },
     { id: 'cckep', label: 'CCKEP Kids', icon: '🧒‍💻', href: 'cckep.html', desc: 'Kids Education + Googlebot' },
     { id: 'migration', label: 'Migrations', icon: '🔀', href: 'migration.html', desc: 'List migrations' },
     { id: 'new-migration', label: 'New Migration', icon: '✨', href: 'new-migration.html', desc: 'Create migration' },
