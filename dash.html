@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Dashboard - codegencc</title><link rel="stylesheet" href="style.css"><script src="menu.js" async defer></script></head>
+<body>
+<div class="page">
+<div class="org-hero" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);">
+<div class="avatar" style="background:#fff;color:#000">🏠</div>
+<div style="flex:1">
+<h1>Dashboard</h1>
+<p class="muted">Your personal home — see YOUR repositories, organizations, and migrations. Not public Explore, this is private to you.</p>
+<div class="meta"><span id="user-email-display" class="badge">Not logged in</span><span>•</span><span id="stats-total" class="muted">0 repos • 0 orgs • 0 migrations</span><span>•</span><a href="neighborhoodlife.html" style="color:#aaa;text-decoration:none">Go to Neighborhoodlife (Gitea Explore) →</a></div>
+</div>
+<a href="create-repo.html" class="btn-small">+ New Repo</a>
+</div>
+
+<div class="grid-2">
+<!-- LEFT: My Repos & Orgs -->
+<div style="display:flex;flex-direction:column;gap:16px">
+<section class="card">
+<h3>📦 My Repositories <span id="repo-count" class="badge">0</span><a href="create-repo.html" class="btn-small ghost" style="margin-left:auto">+ New</a></h3>
+<div id="my-repos" class="list"></div>
+</section>
+
+<section class="card">
+<h3>🏢 My Organizations <span id="org-count" class="badge">0</span><a href="create-org.html" class="btn-small ghost" style="margin-left:auto">+ New</a></h3>
+<div id="my-orgs" class="list"></div>
+</section>
+</div>
+
+<!-- RIGHT: My Migrations & Quick Actions -->
+<div style="display:flex;flex-direction:column;gap:16px">
+<section class="card">
+<h3>🔀 My Migrations <span id="mig-count" class="badge">0</span><a href="new-migration.html" class="btn-small ghost" style="margin-left:auto">+ New</a></h3>
+<div id="my-migrations" class="list"></div>
+</section>
+
+<section class="card">
+<h3>⚡ Quick Actions</h3>
+<div class="list">
+<div class="list-item" onclick="location.href='create-org.html'"><span>➕ Create Organization</span><span class="badge">org</span></div>
+<div class="list-item" onclick="location.href='create-repo.html'"><span>📦 Create Repository</span><span class="badge">repo</span></div>
+<div class="list-item" onclick="location.href='new-migration.html'"><span>🔀 New Migration</span><span class="badge">migration</span></div>
+<div class="list-item" onclick="location.href='cckep.html'"><span>🧒‍💻 Open CCKEP Kids</span><span class="badge" style="background:#ffd60a;color:#000">kids</span></div>
+<div class="list-item" onclick="location.href='neighborhoodlife.html'"><span>🌍 Explore Public (Neighborhoodlife - Fork Gitea)</span><span class="badge" style="background:#ff6b35;color:#fff">Gitea</span></div>
+</div>
+</section>
+
+<section class="card">
+<h3>📊 Dashboard Stats</h3>
+<div id="dashboard-stats" class="code-block" style="font-size:11px;line-height:1.6"></div>
+</section>
+</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h3>ℹ️ Dashboard vs Neighborhoodlife</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+<div><strong>🏠 Dashboard (this page)</strong><p class="muted" style="font-size:12px;margin-top:4px">Your personal home. Shows ONLY your repos, orgs, migrations from localStorage filtered by your email. Private. Like GitHub Dashboard.<br><br>localStorage filters by owner = your email.</p></div>
+<div><strong>🌍 Neighborhoodlife</strong><p class="muted" style="font-size:12px;margin-top:4px">Fork Gitea / Forgejo Explore. Shows ALL public repos/orgs/users from everyone. Public timeline. Like Gitea Explore page.<br><br>localStorage: all codegen_* without filter.</p></div>
+</div>
+</div>
+</div>
+
+<script>
+if(!localStorage.getItem('codegen_current_user')){
+  location.href='auth.html';
+}
+const curUser = JSON.parse(localStorage.getItem('codegen_current_user')||'{}');
+document.getElementById('user-email-display').textContent = curUser.email || 'Unknown';
+
+function loadDashboard(){
+  const email = curUser.email;
+  const orgs = JSON.parse(localStorage.getItem('codegen_orgs')||'[]');
+  const repos = JSON.parse(localStorage.getItem('codegen_repos')||'[]');
+  const migs = JSON.parse(localStorage.getItem('codegen_migrations')||'[]');
+  
+  // Filter by owner = my stuff
+  const myOrgs = orgs.filter(o=>o.owner===email);
+  const myRepos = repos.filter(r=>r.owner===email);
+  const myMigs = migs.filter(m=>m.owner===email || !m.owner); // if no owner, show all for now
+
+  document.getElementById('stats-total').textContent = `${myRepos.length} repos • ${myOrgs.length} orgs • ${myMigs.length} migrations`;
+  document.getElementById('repo-count').textContent = myRepos.length;
+  document.getElementById('org-count').textContent = myOrgs.length;
+  document.getElementById('mig-count').textContent = myMigs.length;
+
+  // My Repos
+  const reposEl = document.getElementById('my-repos');
+  if(myRepos.length===0){
+    reposEl.innerHTML = `<div class="list-item empty" onclick="location.href='create-repo.html'">No repos yet — create first repo →</div>`;
+  }else{
+    reposEl.innerHTML = myRepos.slice().reverse().slice(0,6).map(r=>`
+      <div class="list-item" onclick="location.href='repo.html?r_id=${r.r_id}'">
+        <div style="flex:1"><strong>${r.orgSlug}/${r.name}</strong><div class="muted" style="font-size:11px">${r.desc||'No description'} • ${r.language} • ${new Date(r.createdAt).toLocaleDateString()}</div></div>
+        <span class="badge">${r.visibility}</span>
+      </div>
+    `).join('') + (myRepos.length>6 ? `<div class="list-item empty">+ ${myRepos.length-6} more repos</div>` : '');
+  }
+
+  // My Orgs
+  const orgsEl = document.getElementById('my-orgs');
+  if(myOrgs.length===0){
+    orgsEl.innerHTML = `<div class="list-item empty" onclick="location.href='create-org.html'">No orgs yet — create first org →</div>`;
+  }else{
+    orgsEl.innerHTML = myOrgs.slice().reverse().slice(0,5).map(o=>`
+      <div class="list-item" onclick="location.href='org.html?org=${o.slug}'">
+        <div class="member"><div class="member-avatar">${o.name[0].toUpperCase()}</div><div><strong>${o.name}</strong><div class="muted">${o.slug} • ${o.vis}</div></div></div>
+        <span class="badge">${o.owner.split('@')[0]}</span>
+      </div>
+    `).join('');
+  }
+
+  // My Migrations
+  const migsEl = document.getElementById('my-migrations');
+  if(myMigs.length===0){
+    migsEl.innerHTML = `<div class="list-item empty" onclick="location.href='new-migration.html'">No migrations yet — create first migration →</div>`;
+  }else{
+    migsEl.innerHTML = myMigs.slice().reverse().slice(0,5).map(m=>`
+      <div class="list-item" onclick="location.href='new-migration.html?r_id=${m.r_id}'">
+        <div style="flex:1"><strong>${m.name}</strong><div class="muted" style="font-size:11px">r_id=${m.r_id} • ${m.status} • ${new Date(m.createdAt).toLocaleDateString()}</div></div>
+        <span class="badge" style="background:${m.status==='applied'?'#00ff88':'#222'};color:${m.status==='applied'?'#000':'#aaa'}">${m.status}</span>
+      </div>
+    `).join('');
+  }
+
+  // Stats
+  const statsEl = document.getElementById('dashboard-stats');
+  statsEl.textContent = `User: ${email}
+My Repos: ${myRepos.length} (total public: ${repos.length})
+My Orgs: ${myOrgs.length} (total public: ${orgs.length})
+My Migrations: ${myMigs.length} (total: ${migs.length})
+
+Last repo: ${myRepos.length?myRepos[myRepos.length-1].name+' @ '+myRepos[myRepos.length-1].orgSlug:'none'}
+Last org: ${myOrgs.length?myOrgs[myOrgs.length-1].name:'none'}
+
+This is YOUR dashboard, not public Explore.
+Go to Neighborhoodlife for public Gitea-style feed.`;
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
