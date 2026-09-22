@@ -23,7 +23,8 @@ When they announced it in 2021 as "Your AI pair programmer", the idea was:
 In an airplane the copilot can help with several "standard" tasks, which allows the pilot to focus on getting the plane to its destination.  
 So the name is meant to communicate 3 things:
 
-### 1. You're in command. It's not Autopilot. The official line has always been "It is, it is the copilot. It is. It is not the pilot". You decide architecture, logic, and if the code is correct. 2. It's assistance, not replacement. The term "Copilot" draws inspiration from the aviation industry, where a copilot assists the pilot in operating the aircraft smoothly and safely. Just like real autopilots didn't replace pilots 60+ years ago, they made flying safer and reduced workload.   3. It's pair programming. GitHub + OpenAI described it as an "AI-powered pair programmer" — that second person sitting next to you, suggesting functions, completing lines, like Gmail's Smart Compose but for code.   
+### 1. You're in command.
+It's not Autopilot. The official line has always been "It is, it is the copilot. It is. It is not the pilot". You decide architecture, logic, and if the code is correct. 2. It's assistance, not replacement. The term "Copilot" draws inspiration from the aviation industry, where a copilot assists the pilot in operating the aircraft smoothly and safely. Just like real autopilots didn't replace pilots 60+ years ago, they made flying safer and reduced workload.   3. It's pair programming. GitHub + OpenAI described it as an "AI-powered pair programmer" — that second person sitting next to you, suggesting functions, completing lines, like Gmail's Smart Compose but for code.   
 That's why Microsoft kept reusing it — Copilot for Microsoft 365, Windows Copilot, etc. The name tested well: you're still the captain, you just get a second pair of eyes that never gets tired of writing boilerplate. Read [No-Github Website](https://nogithub.codeberg.page/).
 
 ## Why **GitHub Inc.** acquired **Microsoft**?
@@ -89,7 +90,10 @@ Code Of Conduct is a rules for developers and contributors. is like the guidelin
 Thanks Contributing to our repository. See [Contributing](./CONTRIBUTING.md)
 
 ## Join Our Discord Server 
-Join **Discord** Server by tapping the Blue Highlight. [Join The Server Now!](https://discord.gg/3skm5GSQmT)
+Join **Discord** Server by tapping the Blue Highlight. [Join The Server Now!](https://discord.gg/3skm5GSQmT).
+
+## Join Our Libera Channel
+Join **Libera** Channel by tapping the Blue Highlight. [Join The Channel Now!](https://web.libera.chat/#BlueBixt)
 
 ## Its Countries Home
 The Codegen Countries Home is in the **Baguio, Philippines**.
