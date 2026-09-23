@@ -1,0 +1,25 @@
+# forgejo/docker-compose.yaml ← required (real Forgejo)
+# Minimal production setup - matches your screenshot structure
+services:
+  server:
+    image: codeberg.org/forgejo/forgejo:11
+    container_name: forgejo
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - FORGEJO__database__DB_TYPE=sqlite3
+      - FORGEJO__server__DOMAIN=codegen.cc
+      - FORGEJO__server__ROOT_URL=https://codegencc.web.app/
+      - FORGEJO__service__DISABLE_REGISTRATION=false
+    volumes:
+      - ./data:/data
+    ports:
+      - "3000:3000"
+      - "2222:2222"
+    restart: unless-stopped
+    networks:
+      - forgejo
+
+networks:
+  forgejo:
+    external: false
