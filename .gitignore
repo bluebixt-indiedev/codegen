@@ -1,27 +1,26 @@
 # === DATA - Never push real data ===
-data/*
-!data/.gitkeep
-!data/repos/.gitkeep
-!data/commit/.gitkeep
-!data/lfs/.gitkeep
+!forgejo/data/data/.gitkeep
+!forgejo/data/data/repos/.gitkeep
+!forgejo/data/data/commit/.gitkeep
+!forgejo/data/data/lfs/.gitkeep
 !data/attachments/.gitkeep
-!data/avatars/.gitkeep
-!data/tmp/.gitkeep
-!data/packages/.gitkeep
-!data/actions/.gitkeep
-!data/queues/.gitkeep
-!data/indexers/.gitkeep
+!forgejo/data/data/avatars/.gitkeep
+!forgejo/data/data/tmp/.gitkeep
+!forgejo/data/data/packages/.gitkeep
+!forgejo/data/data/actions/.gitkeep
+!forgejo/data/data/queues/.gitkeep
+!forgejo/data/data/indexers/.gitkeep
 
-data/repos/*
-data/commit/*
-data/lfs/*
-data/attachments/*
-data/avatars/*
-data/tmp/*
-data/packages/*
-data/actions/*
-data/queues/*
-data/indexers/*
+forgejo/data/data/repos/*
+forgejo/data/data/commit/*
+forgejo/data/data/lfs/*
+forgejo/data/data/attachments/*
+forgejo/data/data/avatars/*
+forgejo/data/data/tmp/*
+forgejo/data/data/packages/*
+forgejo/data/data/actions/*
+forgejo/data/data/queues/*
+forgejo/data/data/indexers/*
 
 # === Binaries ===
 codegen
