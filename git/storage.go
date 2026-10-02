@@ -11,19 +11,6 @@ var ReposRoot = "./data/repos"
 func Init() {
 	os.MkdirAll(ReposRoot, 0755)
 }
-func Init() {
-  os.MkdirAll("./data/repos", 0755)
-  os.MkdirAll("./data/commit", 0755)
-  os.MkdirAll("./data/lfs", 0755)
-  os.MkdirAll("./data/attachments", 0755)
-  os.MkdirAll("./data/avatars", 0755)
-  os.MkdirAll("./data/tmp", 0755)
-  os.MkdirAll("./data/packages", 0755)
-  os.MkdirAll("./data/actions", 0755)
-  os.MkdirAll("./data/queues", 0755)
-  os.MkdirAll("./data/indexers", 0755)
-}
-
 func CreateBareRepo(owner, name string) (string, error) {
 	path := filepath.Join(ReposRoot, owner, name+".git")
 	os.MkdirAll(filepath.Dir(path), 0755)
