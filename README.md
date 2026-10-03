@@ -1,4 +1,4 @@
-[assets/background.jpg](assets/background.jpg)
+![logo](assets/background.jpg)
 
 # Code Complainer (Codegen)
 
