@@ -81,12 +81,45 @@ class RegisterForm {
             return this.showError(this.passwordElement, this.sameUserPwElement, 'Username and password should not be the same');
         }
 
-        // Simulate registration
-        this.toggleButton(false, 'Logging in...');
+        // Simulate registration -> NOW SAVES TO LOCAL STORAGE
+        this.toggleButton(false, 'Registering...');
         setTimeout(() => {
-            alert('Register simulated - valid inputs. Implement server auth for real logins.');
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+
+            // Check for duplicate
+            const emailExists = users.some(u => u.email.toLowerCase() === emailValue.toLowerCase());
+            if (emailExists) {
+                this.toggleButton(true, 'Login');
+                return this.showError(this.emailElement, this.emailErrorElement, 'Email already registered');
+            }
+
+            const userExists = users.some(u => u.username.toLowerCase() === usernameValue.toLowerCase());
+            if (userExists) {
+                this.toggleButton(true, 'Login');
+                return this.showError(this.usernameElement, this.userErrorElement, 'Username already taken');
+            }
+
+            // Create new user object
+            const newUser = {
+                id: Date.now(),
+                username: usernameValue,
+                email: emailValue,
+                password: passwordValue, // Note: Don't do this in production - hash it!
+                createdAt: new Date().toISOString()
+            };
+
+            // Save to Local Storage
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+            localStorage.setItem('isLoggedIn', 'true');
+
             this.form.reset();
             this.toggleButton(true, 'Login');
+            
+            // Optional: redirect to login/dashboard
+            // window.location.href = '/dashboard.html';
+            console.log('User saved:', newUser);
         }, 800);
     }
 }
