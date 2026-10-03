@@ -1,0 +1,5 @@
+										<a href="twocolumn1.html">Introduction</a>
+										<a href="twocolumn2.html">Why</a>
+										<a href="onecolumn.html">Links</a>
+										<a href="threecolumn.html">About</a>
+                                        <a href="auth.html">Auth</a>
