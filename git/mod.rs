@@ -1,6 +1,6 @@
 pub mod storage;
 pub mod ssh;
-
+pub mod protocol;
 // Re-export everything from storage so old code using `git::RepoExists` still works
 // This is the Rust equivalent of "repo.go is alias for storage"
 pub use storage::{
