@@ -1,119 +1,98 @@
-// Converted from Go: ./main.go
-use std::collections::HashMap;
+mod git;
 
-package main
+use axum::{
+    extract::{Path as AxumPath, Form},
+    response::{Html, Redirect, IntoResponse},
+    routing::{get, post},
+    Router,
+};
+use serde::Deserialize;
+use std::fs;
 
-import (
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"codeberg.org/BlueBix/codegen/git"
-)
-
-fn main() -> () {
-	git.Init()
-
-	// 1. Git clone
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if git.IsGitRequest(r.URL.Path) {
-			git.HTTPHandler(w, r)
-			return
-		}
-
-		// 2. Homepage - List repos
-		if r.URL.Path == "/" {
-			repos, _ := os.ReadDir("./data/repos")
-			w.Write([]byte("<h1>BlueBix Codegen</h1><a href='/create'>+ New Repo</a><ul>"))
-			for _, f := range repos {
-				w.Write([]byte("<li>" + f.Name() + "</li>"))
-			}
-			w.Write([]byte("</ul>"))
-			return
-		}
-
-		// 3. Create repo page
-		if r.URL.Path == "/create" {
-			if r.Method == "POST" {
-				owner := r.FormValue("owner")
-				name := r.FormValue("name")
-				git.CreateBareRepo(owner, name)
-				http.Redirect(w, r, "/"+owner+"/"+name, 302)
-				return
-			}
-			w.Write([]byte(`
-				<h1>Create Repo</h1>
-				<form method="POST">
-				Owner: <input name="owner" placeholder="BlueBix"><br>
-				Name: <input name="name" placeholder="myrepo"><br>
-				<button>Create</button>
-				</form>
-			`))
-			return
-		}
-
-		fmt.Fprintf(w, "Repo page: %s", r.URL.Path)
-	})
-
-	log.Println("Codegen running on :3000")
-	log.Fatal(http.ListenAndServe(":3000", nil))
+#[derive(Deserialize)]
+struct CreateForm {
+    owner: String,
+    name: String,
 }
-/* ORIGINAL GO:
-package main
 
-import (
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"codeberg.org/BlueBix/codegen/git"
-)
+async fn homepage() -> Html<String> {
+    let mut html = String::from("<h1>BlueBix Codegen (Rust)</h1><a href='/create'>+ New Repo</a><ul>");
 
-func main() {
-	git.Init()
-
-	// 1. Git clone
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if git.IsGitRequest(r.URL.Path) {
-			git.HTTPHandler(w, r)
-			return
-		}
-
-		// 2. Homepage - List repos
-		if r.URL.Path == "/" {
-			repos, _ := os.ReadDir("./data/repos")
-			w.Write([]byte("<h1>BlueBix Codegen</h1><a href='/create'>+ New Repo</a><ul>"))
-			for _, f := range repos {
-				w.Write([]byte("<li>" + f.Name() + "</li>"))
-			}
-			w.Write([]byte("</ul>"))
-			return
-		}
-
-		// 3. Create repo page
-		if r.URL.Path == "/create" {
-			if r.Method == "POST" {
-				owner := r.FormValue("owner")
-				name := r.FormValue("name")
-				git.CreateBareRepo(owner, name)
-				http.Redirect(w, r, "/"+owner+"/"+name, 302)
-				return
-			}
-			w.Write([]byte(`
-				<h1>Create Repo</h1>
-				<form method="POST">
-				Owner: <input name="owner" placeholder="BlueBix"><br>
-				Name: <input name="name" placeholder="myrepo"><br>
-				<button>Create</button>
-				</form>
-			`))
-			return
-		}
-
-		fmt.Fprintf(w, "Repo page: %s", r.URL.Path)
-	})
-
-	log.Println("Codegen running on :3000")
-	log.Fatal(http.ListenAndServe(":3000", nil))
+    if let Ok(entries) = fs::read_dir("./data/repos") {
+        for entry in entries.flatten() {
+            if let Ok(file_type) = entry.file_type() {
+                if file_type.is_dir() {
+                    let owner = entry.file_name().to_string_lossy().to_string();
+                    if let Ok(repos) = fs::read_dir(entry.path()) {
+                        for repo in repos.flatten() {
+                            let repo_name = repo.file_name().to_string_lossy().replace(".git", "");
+                            html.push_str(&format!(
+                                "<li><a href='/{}/{}'>{}/{}</a> — git clone http://localhost:3000/{}/{}.git</li>",
+                                owner, repo_name, owner, repo_name, owner, repo_name
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    html.push_str("</ul>");
+    Html(html)
 }
-*/
+
+async fn create_page() -> Html<&'static str> {
+    Html(r#"
+        <h1>Create Repo</h1>
+        <form method="POST" action="/create">
+        Owner: <input name="owner" placeholder="BlueBix" value="BlueBix"><br><br>
+        Name: <input name="name" placeholder="myrepo"><br><br>
+        <button>Create Bare Repo</button>
+        </form>
+        <br><a href="/">Back</a>
+    "#)
+}
+
+async fn handle_create(Form(form): Form<CreateForm>) -> impl IntoResponse {
+    if form.owner.is_empty() || form.name.is_empty() {
+        return Redirect::to("/create").into_response();
+    }
+    match git::create_bare_repo(&form.owner, &form.name) {
+        Ok(_) => Redirect::to(&format!("/{}/{}", form.owner, form.name)).into_response(),
+        Err(e) => Html(format!("<h1>Error: {}</h1><a href='/create'>Back</a>", e)).into_response(),
+    }
+}
+
+async fn repo_page(AxumPath((owner, repo)): AxumPath<(String, String)>) -> Html<String> {
+    let repo_name = repo.trim_end_matches(".git");
+    if!git::repo_exists(&owner, repo_name) {
+        return Html(format!("<h1>404 - Repo {}/{} not found</h1><a href='/'>Home</a>", owner, repo_name));
+    }
+    let path = git::get_repo_path(&owner, repo_name);
+    Html(format!(
+        r#"<h1>{}/{}</h1>
+        <p>Path: {}</p>
+        <pre>git clone http://localhost:3000/{}/{}.git</pre>
+        <a href="/">Back to list</a>"#,
+        owner, repo_name, path.display(), owner, repo_name
+    ))
+}
+
+#[tokio::main]
+async fn main() {
+    git::init().expect("init failed");
+    let _ = git::create_bare_repo("BlueBix", "codegen");
+
+    let app = Router::new()
+        // Web UI
+       .route("/", get(homepage))
+       .route("/create", get(create_page).post(handle_create))
+       .route("/:owner/:repo", get(repo_page))
+        // Git Smart HTTP - this makes git clone work
+       .route("/:owner/:repo/info/refs", get(git::protocol::handle_info_refs))
+       .route("/:owner/:repo/:service", post(git::protocol::handle_service));
+
+    println!("🚀 BlueBix Codegen (Rust) running on http://localhost:3000");
+
+    let listener = tokio::net::TcpListener::bind("https://codegencc.web.app/").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}
