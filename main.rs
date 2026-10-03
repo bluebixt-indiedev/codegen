@@ -27,7 +27,7 @@ async fn homepage() -> Html<String> {
                         for repo in repos.flatten() {
                             let repo_name = repo.file_name().to_string_lossy().replace(".git", "");
                             html.push_str(&format!(
-                                "<li><a href='/{}/{}'>{}/{}</a> — git clone http://localhost:3000/{}/{}.git</li>",
+                                "<li><a href='/{}/{}'>{}/{}</a> — git clone https://codegencc.web.app/{}/{}.git</li>",
                                 owner, repo_name, owner, repo_name, owner, repo_name
                             ));
                         }
@@ -71,7 +71,7 @@ async fn repo_page(AxumPath((owner, repo)): AxumPath<(String, String)>) -> Html<
     Html(format!(
         r#"<h1>{}/{}</h1>
         <p>Path: {}</p>
-        <pre>git clone http://localhost:3000/{}/{}.git</pre>
+        <pre>git clone https://codegencc.web.app/{}/{}.git</pre>
         <a href="/">Back to list</a>"#,
         owner, repo_name, path.display(), owner, repo_name
     ))
