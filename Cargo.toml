@@ -11,7 +11,7 @@ categories = ["development-tools"]
 
 [[bin]]
 name = "cdgencli"
-path = "src/main.rs"
+path = "./main.rs"
 
 [dependencies]
 # === WEB SERVER ===
