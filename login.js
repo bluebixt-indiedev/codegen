@@ -33,15 +33,31 @@ class LoginForm {
         if (usernameValue === '') return this.showError(this.userError, 'Username cannot be empty');
         if (passwordValue === '') return this.showError(this.passError, 'Password cannot be empty');
 
-        this.toggleButton(false, 'Logging in...');
+        // Create new user object
+            const newUser = {
+                id: Date.now(),
+                username: usernameValue,
+                email: emailValue,
+                password: passwordValue, // Note: Don't do this in production - hash it!
+                createdAt: new Date().toISOString()
+            };
 
-        setTimeout(() => {
-            alert('Login simulated - valid inputs. Implement server auth for real logins.');
+            // Save to Local Storage
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+            localStorage.setItem('isLoggedIn', 'true');
+
             this.form.reset();
             this.toggleButton(true, 'Login');
+            
+            // Optional: redirect to login/dashboard
+            window.location.href = '/dashboard.html';
+            console.log('User saved:', newUser);
         }, 800);
     }
 }
+
 
 // eslint-disable-next-line no-unused-vars
 const _loginForm = new LoginForm('loginForm', 'submitBtn');
