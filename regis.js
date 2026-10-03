@@ -118,7 +118,7 @@ class RegisterForm {
             this.toggleButton(true, 'Login');
             
             // Optional: redirect to login/dashboard
-            // window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard.html';
             console.log('User saved:', newUser);
         }, 800);
     }
