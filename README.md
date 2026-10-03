@@ -7,7 +7,7 @@
 Build. Complain. Ship.
 
 ## What is Code Complainer?
-Code Complainer (Codegen) is a git platform written on [Golang](https://go.dev). The protocol is under Git Protocol. When Creating a new file, lfs or other it goes to `data/` folder with all the each folder have a file named `.gitkeep`. Codegen is Free/Libre git platform perfect for non-credit users.
+Code Complainer (Codegen) is a git platform written on [Rust](https://rust-lang.org/). The protocol is under Git Protocol. When Creating a new file, lfs or other it goes to `forgejo/data/data/` folder with all the each folder have a file named `.gitkeep`. Codegen is Free/Libre git platform perfect for non-credit users.
 
 ## Why We Build Codegen 
 We Know GitHub Right? So were talking about GitHub.
@@ -100,8 +100,8 @@ Join **Libera** Channel by tapping the Blue Highlight. [Join The Channel Now!](h
 ## Its Countries Home
 The Codegen Countries Home is in the **Baguio, Philippines**.
 
-## Why Written on Go?
-**Go** is a perfect programming language for git. The Go files is in the folder `git/`
+## Why Written on Rust?
+Rust is the most or #1 loved programming language in the world. Rust also combines with faster code like C++. To make Rust born, It combined C++ and C to make Rust.
 
 ## Mascot 
 The Mascot is **Ming Ming**, a blue cat loves program with you.
