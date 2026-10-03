@@ -1,133 +1,109 @@
-// Converted from Go: ./git/protocol.go
-use std::collections::HashMap;
+use axum::{
+    body::Body,
+    extract::{Path as AxumPath, Query, State},
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
+};
+use std::{collections::HashMap, path::PathBuf, process::Stdio};
+use tokio::process::Command;
+use tokio_util::io::{ReaderStream, StreamReader};
+use futures::StreamExt;
 
-package git
+use super::storage;
 
-import (
-	"fmt"
-	"io"
-	"net/http"
-	"os/exec"
-	"strings"
-)
+/// Axum state — you can add DB pool later
+#[derive(Clone)]
+pub struct AppState {}
 
-fn Protocol(w http.ResponseWriter, r *http.Request, repoPath string) -> error {
-	urlPath := r.URL.Path
+/// GET /{owner}/{repo}/info/refs?service=git-upload-pack
+pub async fn handle_info_refs(
+    AxumPath((owner, repo)): AxumPath<(String, String)>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Response, (StatusCode, String)> {
+    let repo_name = repo.trim_end_matches(".git");
+    let repo_path = storage::get_repo_path(&owner, repo_name);
 
-	// Step 1: info/refs?service=git-upload-pack
-	if strings.HasSuffix(urlPath, "/info/refs") {
-		service := r.URL.Query().Get("service")
-		if service!= "git-upload-pack" && service!= "git-receive-pack" {
-			http.Error(w, "invalid service", 400)
-			return fmt.Errorf("invalid service")
-		}
-		w.Header().Set("Content-Type", fmt.Sprintf("application/x-%s-advertisement", service))
-		w.Header().Set("Cache-Control", "no-cache")
+    if!repo_path.exists() {
+        return Err((StatusCode::NOT_FOUND, "repo not found".into()));
+    }
 
-		cmd := exec.Command("git", service[4:], "--stateless-rpc", "--advertise-refs", repoPath)
-		cmd.Stdout = w
-		return cmd.Run()
-	}
+    let service = params.get("service").cloned().unwrap_or_default();
+    if service!= "git-upload-pack" && service!= "git-receive-pack" {
+        return Err((StatusCode::BAD_REQUEST, "invalid service".into()));
+    }
 
-	// Step 2: git-upload-pack or git-receive-pack
-	var service string
-	if strings.HasSuffix(urlPath, "/git-upload-pack") {
-		service = "upload-pack"
-		w.Header().Set("Content-Type", "application/x-git-upload-pack-result")
-	} else if strings.HasSuffix(urlPath, "/git-receive-pack") {
-		service = "receive-pack"
-		w.Header().Set("Content-Type", "application/x-git-receive-pack-result")
-	} else {
-		http.Error(w, "invalid endpoint", 400)
-		return fmt.Errorf("invalid endpoint")
-	}
+    // git upload-pack --stateless-rpc --advertise-refs {repoPath}
+    let service_short = &service[4..]; // strip "git-" -> "upload-pack"
+    let mut cmd = Command::new("git")
+       .args([service_short, "--stateless-rpc", "--advertise-refs"])
+       .arg(&repo_path)
+       .stdout(Stdio::piped())
+       .spawn()
+       .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-	cmd := exec.Command("git", service, "--stateless-rpc", repoPath)
-	cmd.Stdin = r.Body
-	cmd.Stdout = w
-	cmd.Stderr = io.Discard
-	return cmd.Run()
+    let stdout = cmd.stdout.take().unwrap();
+    let stream = ReaderStream::new(stdout);
+
+    // Wait in background so we don't zombie
+    tokio::spawn(async move { let _ = cmd.wait().await; });
+
+    let content_type = format!("application/x-{}-advertisement", service);
+
+    Ok(Response::builder()
+       .status(StatusCode::OK)
+       .header(header::CONTENT_TYPE, content_type)
+       .header(header::CACHE_CONTROL, "no-cache")
+       .body(Body::from_stream(stream))
+       .unwrap())
 }
 
-fn ParseAndHandle(w http.ResponseWriter, r *http.Request) -> () {
-	path := strings.Trim(r.URL.Path, "/")
-	parts := strings.Split(path, "/")
-	if len(parts) < 2 {
-		http.Error(w, "repo not found", 404)
-		return
-	}
-	owner := parts[0]
-	repo := strings.TrimSuffix(parts[1], ".git")
-	if!RepoExists(owner, repo) {
-		http.Error(w, "repo not found", 404)
-		return
-	}
-	repoPath := GetRepoPath(owner, repo)
-	Protocol(w, r, repoPath)
+/// POST /{owner}/{repo}/git-upload-pack and /git-receive-pack
+pub async fn handle_service(
+    AxumPath((owner, repo, service)): AxumPath<(String, String, String)>,
+    body: Body,
+) -> Result<Response, (StatusCode, String)> {
+    let repo_name = repo.trim_end_matches(".git");
+    let repo_path = storage::get_repo_path(&owner, repo_name);
+
+    if!repo_path.exists() {
+        return Err((StatusCode::NOT_FOUND, "repo not found".into()));
+    }
+
+    let (git_service, content_type) = match service.as_str() {
+        "git-upload-pack" => ("upload-pack", "application/x-git-upload-pack-result"),
+        "git-receive-pack" => ("receive-pack", "application/x-git-receive-pack-result"),
+        _ => return Err((StatusCode::BAD_REQUEST, "invalid endpoint".into())),
+    };
+
+    // Stream request body into git stdin, stream git stdout back
+    let body_stream = body.into_data_stream();
+    let stdin_reader = StreamReader::new(
+        body_stream.map(|r| r.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)))
+    );
+
+    let mut cmd = Command::new("git")
+       .args([git_service, "--stateless-rpc"])
+       .arg(&repo_path)
+       .stdin(Stdio::piped())
+       .stdout(Stdio::piped())
+       .spawn()
+       .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Pipe body -> git stdin
+    if let Some(mut stdin) = cmd.stdin.take() {
+        tokio::spawn(async move {
+            let _ = tokio::io::copy(&mut tokio::io::BufReader::new(stdin_reader), &mut stdin).await;
+        });
+    }
+
+    let stdout = cmd.stdout.take().unwrap();
+    let out_stream = ReaderStream::new(stdout);
+    tokio::spawn(async move { let _ = cmd.wait().await; });
+
+    Ok(Response::builder()
+       .status(StatusCode::OK)
+       .header(header::CONTENT_TYPE, content_type)
+       .header(header::CACHE_CONTROL, "no-cache")
+       .body(Body::from_stream(out_stream))
+       .unwrap())
 }
-/* ORIGINAL GO:
-package git
-
-import (
-	"fmt"
-	"io"
-	"net/http"
-	"os/exec"
-	"strings"
-)
-
-func Protocol(w http.ResponseWriter, r *http.Request, repoPath string) error {
-	urlPath := r.URL.Path
-
-	// Step 1: info/refs?service=git-upload-pack
-	if strings.HasSuffix(urlPath, "/info/refs") {
-		service := r.URL.Query().Get("service")
-		if service!= "git-upload-pack" && service!= "git-receive-pack" {
-			http.Error(w, "invalid service", 400)
-			return fmt.Errorf("invalid service")
-		}
-		w.Header().Set("Content-Type", fmt.Sprintf("application/x-%s-advertisement", service))
-		w.Header().Set("Cache-Control", "no-cache")
-
-		cmd := exec.Command("git", service[4:], "--stateless-rpc", "--advertise-refs", repoPath)
-		cmd.Stdout = w
-		return cmd.Run()
-	}
-
-	// Step 2: git-upload-pack or git-receive-pack
-	var service string
-	if strings.HasSuffix(urlPath, "/git-upload-pack") {
-		service = "upload-pack"
-		w.Header().Set("Content-Type", "application/x-git-upload-pack-result")
-	} else if strings.HasSuffix(urlPath, "/git-receive-pack") {
-		service = "receive-pack"
-		w.Header().Set("Content-Type", "application/x-git-receive-pack-result")
-	} else {
-		http.Error(w, "invalid endpoint", 400)
-		return fmt.Errorf("invalid endpoint")
-	}
-
-	cmd := exec.Command("git", service, "--stateless-rpc", repoPath)
-	cmd.Stdin = r.Body
-	cmd.Stdout = w
-	cmd.Stderr = io.Discard
-	return cmd.Run()
-}
-
-func ParseAndHandle(w http.ResponseWriter, r *http.Request) {
-	path := strings.Trim(r.URL.Path, "/")
-	parts := strings.Split(path, "/")
-	if len(parts) < 2 {
-		http.Error(w, "repo not found", 404)
-		return
-	}
-	owner := parts[0]
-	repo := strings.TrimSuffix(parts[1], ".git")
-	if!RepoExists(owner, repo) {
-		http.Error(w, "repo not found", 404)
-		return
-	}
-	repoPath := GetRepoPath(owner, repo)
-	Protocol(w, r, repoPath)
-}
-*/
