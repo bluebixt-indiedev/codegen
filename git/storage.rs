@@ -1,95 +1,56 @@
-// Converted from Go: ./git/storage.go
-use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::fs;
 
-package git
+/// Root directory where all bare repos are stored
+pub const REPOS_ROOT: &str = "forgejo/data/data/repos";
 
-import (
-	"os"
-	"os/exec"
-	"path/filepath"
-)
-
-var ReposRoot = "./data/repos"
-
-fn Init() -> () {
-	os.MkdirAll(ReposRoot, 0755)
-}
-fn CreateBareRepo(owner, name string) -> string, error {
-	path := filepath.Join(ReposRoot, owner, name+".git")
-	os.MkdirAll(filepath.Dir(path), 0755)
-	if _, err := os.Stat(path); err == nil {
-		return path, nil // already exists
-	}
-	cmd := exec.Command("git", "init", "--bare", path)
-	return path, cmd.Run()
+/// Ensure the repos root exists
+pub fn init() -> std::io::Result<()> {
+    fs::create_dir_all(REPOS_ROOT)
 }
 
-fn RepoExists(owner, name string) -> bool {
-	path := filepath.Join(ReposRoot, owner, name+".git")
-	_, err := os.Stat(path)
-	return err == nil
+/// Create a bare repo at data/repos/{owner}/{name}.git
+/// Returns the path. If it already exists, returns it without error.
+pub fn create_bare_repo(owner: &str, name: &str) -> std::io::Result<PathBuf> {
+    let path = get_repo_path(owner, name);
+    
+    // Ensure parent dir exists: data/repos/{owner}/
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    if path.exists() {
+        return Ok(path); // already exists
+    }
+
+    // git init --bare {path}
+    let status = Command::new("git")
+        .args(["init", "--bare", &path.to_string_lossy()])
+        .status()?;
+
+    if status.success() {
+        Ok(path)
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("git init --bare failed with status: {}", status),
+        ))
+    }
 }
 
-fn GetRepoPath(owner, name string) -> string {
-	return filepath.Join(ReposRoot, owner, name+".git")
+/// Check if repo exists
+pub fn repo_exists(owner: &str, name: &str) -> bool {
+    get_repo_path(owner, name).exists()
 }
 
-fn IsGitRequest(path string) -> bool {
-	return len(path) > 4 && (contains(path, ".git/") || contains(path, ".git"))
+/// Get full path to repo
+pub fn get_repo_path(owner: &str, name: &str) -> PathBuf {
+    Path::new(REPOS_ROOT).join(owner).join(format!("{}.git", name))
 }
 
-fn contains(s, substr string) -> bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+/// Check if a request path looks like a git request
+/// ex: /rogge/myapp.git/info/refs
+pub fn is_git_request(path: &str) -> bool {
+    path.len() > 4 && path.contains(".git")
 }
-/* ORIGINAL GO:
-package git
-
-import (
-	"os"
-	"os/exec"
-	"path/filepath"
-)
-
-var ReposRoot = "./data/repos"
-
-func Init() {
-	os.MkdirAll(ReposRoot, 0755)
-}
-func CreateBareRepo(owner, name string) (string, error) {
-	path := filepath.Join(ReposRoot, owner, name+".git")
-	os.MkdirAll(filepath.Dir(path), 0755)
-	if _, err := os.Stat(path); err == nil {
-		return path, nil // already exists
-	}
-	cmd := exec.Command("git", "init", "--bare", path)
-	return path, cmd.Run()
-}
-
-func RepoExists(owner, name string) bool {
-	path := filepath.Join(ReposRoot, owner, name+".git")
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-func GetRepoPath(owner, name string) string {
-	return filepath.Join(ReposRoot, owner, name+".git")
-}
-
-func IsGitRequest(path string) bool {
-	return len(path) > 4 && (contains(path, ".git/") || contains(path, ".git"))
-}
-
-func contains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-*/
