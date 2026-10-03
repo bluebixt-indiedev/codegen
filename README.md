@@ -2,8 +2,6 @@
 
 # Code Complainer (Codegen)
 
-[![Please don't upload to GitHub](https://nogithub.codeberg.page/badge.svg)](https://nogithub.codeberg.page)
-
 Build. Complain. Ship.
 
 ## What is Code Complainer?
