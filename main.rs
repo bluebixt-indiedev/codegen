@@ -15,6 +15,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+
 #[derive(Clone)]
 struct AppState {
     db: SqlitePool,
@@ -103,6 +104,19 @@ struct RepoRow {
 struct AuthClaims {
     sub: String,
     exp: usize,
+}
+
+#[derive(Deserialize)]
+struct CommitFileRequest {
+    path: String,
+    content: String,
+}
+
+#[derive(Deserialize)]
+struct CommitRequest {
+    repo_name: String,
+    message: String,
+    files: Vec<CommitFileRequest>,
 }
 
 fn jwt_secret() -> &'static str {
@@ -509,6 +523,149 @@ fn commit_files_in_repo(owner: &str, repo_name: &str, files: &[CommitFileRequest
         return Err("Repository does not exist".to_string());
     }
 
+fn repo_worktree_path(owner: &str, repo_name: &str) -> PathBuf {
+    PathBuf::from("forgejo/data/data/worktrees")
+        .join(owner)
+        .join(repo_name)
+}
+
+fn commit_files_in_repo(owner: &str, repo_name: &str, files: &[CommitFileRequest], message: &str) -> Result<String, String> {
+    let bare_repo = git::get_repo_path(owner, repo_name);
+    if !bare_repo.exists() {
+        return Err("Repository does not exist".to_string());
+    }
+
+    let worktree = repo_worktree_path(owner, repo_name);
+
+    if !worktree.exists() {
+        fs::create_dir_all(&worktree).map_err(|e| format!("Could not create worktree: {e}"))?;
+
+        let clone_status = Command::new("git")
+            .args(["clone", bare_repo.to_str().unwrap(), worktree.to_str().unwrap()])
+            .status()
+            .map_err(|e| format!("Clone failed: {e}"))?;
+
+        if !clone_status.success() {
+            return Err("Failed to clone repository for commit".to_string());
+        }
+    }
+
+    for file in files {
+        let clean_path = file.path.trim().trim_start_matches('/');
+        if clean_path.is_empty() {
+            return Err("File path cannot be empty".to_string());
+        }
+
+        let full_path = worktree.join(clean_path);
+        if let Some(parent) = full_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Could not create directories for {clean_path}: {e}"))?;
+        }
+
+        fs::write(&full_path, &file.content)
+            .map_err(|e| format!("Could not write file {clean_path}: {e}"))?;
+    }
+
+    let status = Command::new("git")
+        .current_dir(&worktree)
+        .args(["add", "."])
+        .status()
+        .map_err(|e| format!("git add failed: {e}"))?;
+
+    if !status.success() {
+        return Err("git add failed".to_string());
+    }
+
+    let commit_message = if message.trim().is_empty() {
+        "codegen commit".to_string()
+    } else {
+        message.trim().to_string()
+    };
+
+    let commit_status = Command::new("git")
+        .current_dir(&worktree)
+        .args([
+            "-c",
+            "user.name=Codegen",
+            "-c",
+            "user.email=codegen@local",
+            "commit",
+            "-m",
+            &commit_message,
+        ])
+        .status()
+        .map_err(|e| format!("git commit failed: {e}"))?;
+
+    if !commit_status.success() {
+        return Err("No changes to commit or git commit failed".to_string());
+    }
+
+    let rev_parse = Command::new("git")
+        .current_dir(&worktree)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .map_err(|e| format!("Could not read commit hash: {e}"))?;
+
+    if !rev_parse.status.success() {
+        return Err("Could not read commit hash".to_string());
+    }
+
+    let hash = String::from_utf8_lossy(&rev_parse.stdout).trim().to_string();
+    Ok(hash)
+}
+
+async fn create_commit(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<CommitRequest>,
+) -> impl IntoResponse {
+    let user = match get_authenticated_user(&headers, &state).await {
+        Ok(user) => user,
+        Err((status, json)) => return (status, json),
+    };
+
+    let repo_name = payload.repo_name.trim();
+    if repo_name.is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({ "message": "Repository name is required" })));
+    }
+
+    let repo_exists = query_as::<_, RepoRow>(
+        "SELECT id, owner, name, description, created_at FROM repositories WHERE owner = ? AND name = ?"
+    )
+    .bind(&user.username)
+    .bind(repo_name)
+    .fetch_optional(&state.db)
+    .await;
+
+    if repo_exists.is_err() || repo_exists.unwrap().is_none() {
+        return (StatusCode::NOT_FOUND, Json(json!({ "message": "Repository not found" })));
+    }
+
+    if payload.files.is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({ "message": "At least one file is required for a commit" })));
+    }
+
+    match commit_files_in_repo(&user.username, repo_name, &payload.files, &payload.message) {
+        Ok(hash) => (
+            StatusCode::OK,
+            Json(json!({
+                "success": true,
+                "message": "Repository updated successfully",
+                "commit": hash,
+                "repo": repo_name,
+                "owner": user.username
+            }))
+        ),
+        Err(err) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "success": false,
+                "message": err
+            }))
+        ),
+    }
+}
+
     let worktree = repo_worktree_path(owner, repo_name);
     if !worktree.exists() {
         fs::create_dir_all(&worktree).map_err(|e| format!("Could not create worktree: {e}"))?;
@@ -735,7 +892,7 @@ async fn main() {
         .route("/api/repository/commit", post(create_commit))
         .with_state(state);
 
-    println!("🚀 BlueBix Codegen (Rust) running on http://localhost:3000");
+    println!("🚀 BlueBix Codegen (Rust) running.");
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
