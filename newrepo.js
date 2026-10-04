@@ -60,6 +60,36 @@ document.addEventListener("DOMContentLoaded", async () => {
       </div>
     `).join("");
 
+repoGrid.innerHTML = repos.map(repo =>
+`<div id="commitModal" class="modal" aria-modal="true">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>Create commit</h2>
+      <button id="closeCommitModalBtn" class="btn secondary" style="border:none;">×</button>
+    </div>
+
+    <form id="commitForm">
+      <label class="label" for="commitRepoName">Repository</label>
+      <input class="input" id="commitRepoName" name="repo_name" type="text" placeholder="repo-name" required />
+
+      <label class="label" for="commitMessage">Commit message</label>
+      <input class="input" id="commitMessage" name="message" placeholder="Initial commit" />
+
+      <label class="label" for="commitFiles">Files JSON</label>
+      <textarea
+        class="textarea"
+        id="commitFiles"
+        name="files"
+        placeholder='[{"path":"README.md","content":"hello world"}]'
+      ></textarea>
+
+      <div id="commitError" class="error"></div>
+
+      <button class="btn primary" type="submit" style="width:100%; margin-top:10px;">Commit changes</button>
+    </form>
+  </div>
+</div>`).join("");
+
     document.querySelectorAll(".clone").forEach(btn => {
       btn.addEventListener("click", () => {
         const owner = btn.dataset.owner;
