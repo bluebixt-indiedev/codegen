@@ -7,9 +7,9 @@ Welcome to Codegen Documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   installation
-   usage
-   api
+   welcome
+   start
+   
 
 Indices and tables
 
